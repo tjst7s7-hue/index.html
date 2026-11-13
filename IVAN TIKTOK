@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Узнать IP-адрес и геолокацию</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #eef2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .container { background: #ffffff; width: 100%; max-width: 480px; padding: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08); }
+        h1 { font-size: 22px; color: #1a202c; text-align: center; margin-bottom: 20px; }
+        .ip-box { background: #f7fafc; border: 2px dashed #cbd5e0; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 20px; }
+        #ip-display { font-size: 26px; font-weight: bold; color: #2b6cb0; word-break: break-all; margin-bottom: 10px; }
+        button { background: #3182ce; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.2s; }
+        button:hover { background: #2b6cb0; }
+        .info-list { list-style: none; margin-bottom: 25px; }
+        .info-list li { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #edf2f7; font-size: 15px; }
+        .info-list li span:first-child { color: #718096; }
+        .info-list li span:last-child { color: #2d3748; font-weight: 600; text-align: right; }
+        .search-box { display: flex; gap: 10px; }
+        input { flex: 1; padding: 10px 12px; border: 1px solid #cbd5e0; border-radius: 8px; font-size: 14px; outline: none; }
+        input:focus { border-color: #3182ce; }
+        .error { color: #e53e3e; font-size: 13px; text-align: center; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Информация об IP-адресе</h1>
+    
+    <div class="ip-box">
+        <div id="ip-display">Определение...</div>
+        <button onclick="copyIP()">Скопировать IP</button>
+    </div>
+
+    <ul class="info-list">
+        <li><span>Страна:</span> <span id="country">—</span></li>
+        <li><span>Город:</span> <span id="city">—</span></li>
+        <li><span>Провайдер (ISP):</span> <span id="isp">—</span></li>
+        <li><span>Часовой пояс:</span> <span id="timezone">—</span></li>
+    </ul>
+
+    <div class="search-box">
+        <input type="text" id="custom-ip" placeholder="Введите IP (например, 8.8.8.8)">
+        <button onclick="checkCustomIP()">Проверить</button>
+    </div>
+    <div id="error-msg" class="error">Неверный формат IP или ошибка сервера.</div>
+</div>
+
+<script>
+    // Функция получения данных об IP
+    async function fetchIPData(ip = '') {
+        const errorMsg = document.getElementById('error-msg');
+        errorMsg.style.display = 'none';
+        
+        // Используем бесплатный API ipwho.is (не требует ключа и поддерживает HTTPS)
+        const url = ip ? `https://ipwho.is{ip}` : 'https://ipwho.is';
+        
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Ошибка получения данных');
+            }
+
+            document.getElementById('ip-display').textContent = data.ip;
+            document.getElementById('country').textContent = `${data.country} (${data.country_code})`;
+            document.getElementById('city').textContent = data.city || 'Не определен';
+            document.getElementById('isp').textContent = data.connection?.isp || 'Неизвестно';
+            document.getElementById('timezone').textContent = data.timezone?.id || '—';
+        } catch (err) {
+            errorMsg.textContent = 'Не удалось определить данные. Проверьте правильность IP.';
+            errorMsg.style.display = 'block';
+        }
+    }
+
+    // Проверка введенного пользователем IP
+    function checkCustomIP() {
+        const inputVal = document.getElementById('custom-ip').value.trim();
+        if (inputVal) {
+            document.getElementById('ip-display').textContent = 'Загрузка...';
+            fetchIPData(inputVal);
+        }
+    }
+
+    // Копирование IP в буфер обмена
+    function copyIP() {
+        const ipText = document.getElementById('ip-display').textContent;
+        if (ipText && ipText !== 'Определение...' && ipText !== 'Загрузка...') {
+            navigator.clipboard.writeText(ipText);
+            alert('IP-адрес скопирован: ' + ipText);
+        }
+    }
+
+    // Запуск определения при загрузке страницы
+    window.onload = () => fetchIPData();
+</script>
+
+</body>
+</html>
